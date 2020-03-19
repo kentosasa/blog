@@ -17,9 +17,9 @@ collections:
           widget: hidden,
           default: BlogPost,
         }
-      - { name: path, label: Path }
+      - { name: path, label: Path, default: "", required: true }
       - { name: date, label: Date, widget: datetime }
-      - { name: title, label: Title }
+      - { name: title, label: Title, default: "" }
       - { name: thumbnail, label: Thumbnail, widget: image }
-      - { name: metaDescription, label: MetaDescription, widget: text }
+      - { name: metaDescription, label: MetaDescription, default: "", widget: text, required: true }
       - { name: body, label: Body, widget: markdown }
