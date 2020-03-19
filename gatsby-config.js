@@ -15,7 +15,7 @@ module.exports = {
       description: `ご飯とかお金とかについて考えるのが好きなエンジニアのブログです`,
     },
     /* W3Layouts domain verification key for contact forms https://my.w3layouts.com/Forms/ */
-    w3l_dom_key: `5e609f7a2d23fCF_Domain_verify`
+    w3l_dom_key: ``
   },
   plugins: [
     {
@@ -44,11 +44,18 @@ module.exports = {
       },
     },
     {
-      resolve: `gatsby-plugin-google-analytics`,
+      resolve: "gatsby-plugin-firebase",
       options: {
-        // The property ID; the tracking code won't be generated without it
-        trackingId: "UA-30027142-1",
-        head: true,
+        credentials: {
+          apiKey: "AIzaSyBMAwicuj8ts4XIELdScDdQZqtZwIMSq48",
+          authDomain: "blog-c8206.firebaseapp.com",
+          databaseURL: "https://blog-c8206.firebaseio.com",
+          projectId: "blog-c8206",
+          storageBucket: "blog-c8206.appspot.com",
+          messagingSenderId: "1008103351474",
+          appId: "1:1008103351474:web:294c231141d964e32215ab",
+          measurementId: "G-T546T7PXM1"
+        }
       }
     },
     `gatsby-plugin-sass`,
