@@ -44,18 +44,12 @@ module.exports = {
       },
     },
     {
-      resolve: "gatsby-plugin-firebase",
+      resolve: `gatsby-plugin-google-analytics`,
       options: {
-        credentials: {
-          apiKey: "AIzaSyBMAwicuj8ts4XIELdScDdQZqtZwIMSq48",
-          authDomain: "blog-c8206.firebaseapp.com",
-          databaseURL: "https://blog-c8206.firebaseio.com",
-          projectId: "blog-c8206",
-          storageBucket: "blog-c8206.appspot.com",
-          messagingSenderId: "1008103351474",
-          appId: "1:1008103351474:web:294c231141d964e32215ab",
-          measurementId: "G-T546T7PXM1"
-        }
+        trackingId: "UA-129590043-2",
+        // this option places the tracking script into the head of the DOM
+        head: true,
+        // other options
       }
     },
     `gatsby-plugin-sass`,
