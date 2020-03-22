@@ -48,13 +48,34 @@ $ git pull {作成したbranch}
 .......
 ```
 
-### static/admin/config.yml のRepositoryを変更する
+### static/admin/config.yml を変更する
 
 ```
 backend:
   name: github
   repo: kentosasa/blog
-  ......
+publish_mode: editorial_workflow
+media_folder: static/assets
+public_folder: /assets
+collections:
+  - name: blog
+    label: Blog
+    folder: _data/blog
+    slug: '{{year}}-{{month}}-{{day}}-{{slug}}'
+    create: true
+    fields:
+      - {
+          label: Template,
+          name: template,
+          widget: hidden,
+          default: BlogPost,
+        }
+      - { name: path, label: Path, default: "", required: true }
+      - { name: date, label: Date, widget: datetime }
+      - { name: title, label: Title, default: "" }
+      - { name: thumbnail, label: Thumbnail, widget: image }
+      - { name: metaDescription, label: MetaDescription, default: " ", widget: text }
+      - { name: body, label: Body, widget: markdown }
 ```
 
 ### Connect to Gtihub を押す
