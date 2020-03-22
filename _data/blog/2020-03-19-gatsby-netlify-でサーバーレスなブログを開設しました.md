@@ -3,8 +3,8 @@ template: BlogPost
 path: /gatsby-netlify-cms
 date: 2020-03-19T13:27:43.380Z
 title: Gatsby+Netlify でサーバーレスなブログを開設しました
-thumbnail: ''
-metaDescription: ''
+thumbnail: /assets/スクリーンショット 2020-03-19 22.25.55.png
+metaDescription: ' '
 ---
 # 背景
 
