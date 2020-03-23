@@ -52,6 +52,7 @@ module.exports = {
         // other options
       }
     },
+    `gatsby-plugin-sitemap`,
     `gatsby-plugin-sass`,
     `gatsby-plugin-react-helmet`,
     `gatsby-plugin-netlify-cms`,
