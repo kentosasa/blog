@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法使いの陣取り</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+
+        .board-container {
+            position: relative;
+        }
+
+        svg {
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .hex {
+            stroke: #333;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hex.empty {
+            fill: #ffffff;
+        }
+
+        .hex.selectable {
+            fill: #ffffcc;
+            cursor: pointer;
+        }
+
+        .hex.selected {
+            fill: #ffeb3b;
+            stroke-width: 4;
+        }
+
+        .territory-1 {
+            fill: #e3f2fd;
+        }
+
+        .territory-2 {
+            fill: #fce4ec;
+        }
+
+        .territory-double-1 {
+            fill: #1976d2;
+        }
+
+        .territory-double-2 {
+            fill: #c2185b;
+        }
+
+        .wizard {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .wizard:hover {
+            transform: scale(1.1);
+        }
+
+        .wizard-1 {
+            fill: #2196f3;
+        }
+
+        .wizard-2 {
+            fill: #e91e63;
+        }
+
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 250px;
+        }
+
+        .player-info {
+            padding: 20px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .player-info.active {
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        .player-1 {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 3px solid #2196f3;
+        }
+
+        .player-2 {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            border: 3px solid #e91e63;
+        }
+
+        .player-info h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .player-info p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+
+        .rules {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .rules h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .rules ul {
+            margin-left: 20px;
+        }
+
+        .rules li {
+            margin: 5px 0;
+        }
+
+        .message {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ffc107;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .winner {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            font-size: 18px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="board-container">
+            <svg id="board" width="600" height="600"></svg>
+        </div>
+        <div class="info-panel">
+            <div id="player1-info" class="player-info player-1 active">
+                <h2>プレイヤー1 (青)</h2>
+                <p>残り陣地: <span id="p1-tokens">20</span></p>
+                <p>盤面陣地: <span id="p1-board">0</span></p>
+            </div>
+            <div id="player2-info" class="player-info player-2">
+                <h2>プレイヤー2 (赤)</h2>
+                <p>残り陣地: <span id="p2-tokens">20</span></p>
+                <p>盤面陣地: <span id="p2-board">0</span></p>
+            </div>
+            <div id="message" class="message">
+                プレイヤー1のターン<br>魔法使いを選択してください
+            </div>
+            <button onclick="game.newGame()">新しいゲーム</button>
+            <div class="rules">
+                <h3>ルール</h3>
+                <ul>
+                    <li>魔法使いを選択して移動先をクリック</li>
+                    <li>移動後、魔法使い同士を結ぶ直線上に陣地を配置</li>
+                    <li>魔法使い3個が正三角形を作ると中央に守備陣地(濃色)を配置</li>
+                    <li>守備陣地は奪われない</li>
+                    <li>20個の陣地を配置するか、陣地数が多い方が勝利</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // キューブ座標系での六角形グリッド
+        class HexGrid {
+            constructor(radius) {
+                this.radius = radius;
+                this.hexSize = 30;
+                this.cells = new Map();
+                this.initGrid();
+            }
+
+            initGrid() {
+                // 正六角形のグリッドを生成（中心から半径radiusまで）
+                for (let q = -this.radius; q <= this.radius; q++) {
+                    for (let r = -this.radius; r <= this.radius; r++) {
+                        const s = -q - r;
+                        if (Math.abs(s) <= this.radius) {
+                            const key = this.getKey(q, r, s);
+                            this.cells.set(key, {
+                                q, r, s,
+                                territory: null,  // null, 1, 2
+                                territoryCount: 1, // 1 or 2 (for double territory)
+                                wizard: null      // null, 1, 2
+                            });
+                        }
+                    }
+                }
+            }
+
+            getKey(q, r, s) {
+                return `${q},${r},${s}`;
+            }
+
+            getCell(q, r, s) {
+                return this.cells.get(this.getKey(q, r, s));
+            }
+
+            // キューブ座標からピクセル座標への変換
+            hexToPixel(q, r) {
+                const x = this.hexSize * (3/2 * q);
+                const y = this.hexSize * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
+                return { x, y };
+            }
+
+            // 六角形の頂点を取得
+            getHexPoints(x, y) {
+                const points = [];
+                for (let i = 0; i < 6; i++) {
+                    const angle = Math.PI / 180 * (60 * i + 30);
+                    const px = x + this.hexSize * Math.cos(angle);
+                    const py = y + this.hexSize * Math.sin(angle);
+                    points.push(`${px},${py}`);
+                }
+                return points.join(' ');
+            }
+        }
+
+        class WizardTerritoryGame {
+            constructor() {
+                this.grid = new HexGrid(3);
+                this.currentPlayer = 1;
+                this.selectedWizard = null;
+                this.tokensRemaining = { 1: 20, 2: 20 };
+                this.consecutivePasses = 0;
+                this.gameOver = false;
+                this.initBoard();
+                this.newGame();
+            }
+
+            initBoard() {
+                const svg = document.getElementById('board');
+                const centerX = 300;
+                const centerY = 300;
+
+                // 六角形を描画
+                this.grid.cells.forEach((cell, key) => {
+                    const pos = this.grid.hexToPixel(cell.q, cell.r);
+                    const x = centerX + pos.x;
+                    const y = centerY + pos.y;
+
+                    const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    hex.setAttribute('points', this.grid.getHexPoints(x, y));
+                    hex.setAttribute('class', 'hex empty');
+                    hex.setAttribute('data-key', key);
+                    hex.addEventListener('click', (e) => this.onHexClick(key));
+
+                    cell.element = hex;
+                    cell.pixelX = x;
+                    cell.pixelY = y;
+                    svg.appendChild(hex);
+                });
+            }
+
+            newGame() {
+                this.currentPlayer = 1;
+                this.selectedWizard = null;
+                this.tokensRemaining = { 1: 20, 2: 20 };
+                this.consecutivePasses = 0;
+                this.gameOver = false;
+
+                // グリッドをリセット
+                this.grid.cells.forEach(cell => {
+                    cell.territory = null;
+                    cell.territoryCount = 1;
+                    cell.wizard = null;
+                });
+
+                // 初期配置: 対角の端に3個ずつ
+                // プレイヤー1: 左上端
+                const p1Positions = [
+                    {q: -3, r: 0, s: 3},
+                    {q: -3, r: 1, s: 2},
+                    {q: -2, r: -1, s: 3}
+                ];
+
+                // プレイヤー2: 右下端
+                const p2Positions = [
+                    {q: 3, r: 0, s: -3},
+                    {q: 3, r: -1, s: -2},
+                    {q: 2, r: 1, s: -3}
+                ];
+
+                p1Positions.forEach(pos => {
+                    const cell = this.grid.getCell(pos.q, pos.r, pos.s);
+                    if (cell) cell.wizard = 1;
+                });
+
+                p2Positions.forEach(pos => {
+                    const cell = this.grid.getCell(pos.q, pos.r, pos.s);
+                    if (cell) cell.wizard = 2;
+                });
+
+                this.render();
+                this.updateInfo();
+            }
+
+            onHexClick(key) {
+                if (this.gameOver) return;
+
+                const cell = this.grid.cells.get(key);
+
+                // 魔法使いの選択
+                if (cell.wizard === this.currentPlayer) {
+                    this.selectedWizard = key;
+                    this.render();
+                    this.updateMessage(`魔法使いを選択しました。移動先をクリックしてください`);
+                    return;
+                }
+
+                // 移動
+                if (this.selectedWizard) {
+                    this.tryMove(this.selectedWizard, key);
+                }
+            }
+
+            tryMove(fromKey, toKey) {
+                const fromCell = this.grid.cells.get(fromKey);
+                const toCell = this.grid.cells.get(toKey);
+
+                // 移動先の検証
+                if (toCell.wizard) {
+                    this.updateMessage('そこには既に魔法使いがいます');
+                    return;
+                }
+
+                if (toCell.territory === (3 - this.currentPlayer)) {
+                    this.updateMessage('相手の陣地には移動できません');
+                    return;
+                }
+
+                // 移動をシミュレートして陣地が増えるか確認
+                const originalWizard = fromCell.wizard;
+                fromCell.wizard = null;
+                toCell.wizard = this.currentPlayer;
+
+                const newTerritories = this.calculateNewTerritories();
+
+                if (newTerritories.length === 0) {
+                    // 陣地が増えない移動は不可
+                    fromCell.wizard = originalWizard;
+                    toCell.wizard = null;
+                    this.updateMessage('陣地を増やせない移動はできません');
+                    return;
+                }
+
+                // 移動を確定
+                this.placeTerritories(newTerritories);
+                this.checkAndPlaceTriangleTerritories();
+                this.selectedWizard = null;
+                this.consecutivePasses = 0;
+
+                // 勝利判定
+                if (this.checkWin()) {
+                    return;
+                }
+
+                // ターン交代
+                this.currentPlayer = 3 - this.currentPlayer;
+
+                // 次のプレイヤーが移動できるか確認
+                if (!this.hasValidMoves()) {
+                    this.consecutivePasses++;
+                    if (this.consecutivePasses >= 2) {
+                        this.endGame();
+                    } else {
+                        this.updateMessage(`プレイヤー${this.currentPlayer}は移動できません。パスします`);
+                        setTimeout(() => {
+                            this.currentPlayer = 3 - this.currentPlayer;
+                            this.render();
+                            this.updateInfo();
+                        }, 2000);
+                    }
+                } else {
+                    this.consecutivePasses = 0;
+                    this.render();
+                    this.updateInfo();
+                }
+            }
+
+            calculateNewTerritories() {
+                const wizards = [];
+                this.grid.cells.forEach(cell => {
+                    if (cell.wizard === this.currentPlayer) {
+                        wizards.push(cell);
+                    }
+                });
+
+                const newTerritories = new Set();
+
+                // 各魔法使いのペアについて直線上の陣地を計算
+                for (let i = 0; i < wizards.length; i++) {
+                    for (let j = i + 1; j < wizards.length; j++) {
+                        const w1 = wizards[i];
+                        const w2 = wizards[j];
+                        const line = this.getLineBetween(w1, w2);
+
+                        line.forEach(cell => {
+                            // 新しい陣地または相手から奪える陣地
+                            if (!cell.territory ||
+                                (cell.territory !== this.currentPlayer && cell.territoryCount === 1)) {
+                                newTerritories.add(cell);
+                            }
+                        });
+                    }
+                }
+
+                // 魔法使いがいるマス自体も陣地に含める
+                wizards.forEach(w => {
+                    if (!w.territory || w.territory !== this.currentPlayer) {
+                        newTerritories.add(w);
+                    }
+                });
+
+                return Array.from(newTerritories);
+            }
+
+            getLineBetween(cell1, cell2) {
+                const dq = cell2.q - cell1.q;
+                const dr = cell2.r - cell1.r;
+                const ds = cell2.s - cell1.s;
+
+                // 3方向のいずれかの直線上にあるか確認
+                const line = [];
+
+                if (dq === 0) {
+                    // q軸方向の直線
+                    const minR = Math.min(cell1.r, cell2.r);
+                    const maxR = Math.max(cell1.r, cell2.r);
+                    for (let r = minR; r <= maxR; r++) {
+                        const s = -cell1.q - r;
+                        const cell = this.grid.getCell(cell1.q, r, s);
+                        if (cell) line.push(cell);
+                    }
+                } else if (dr === 0) {
+                    // r軸方向の直線
+                    const minQ = Math.min(cell1.q, cell2.q);
+                    const maxQ = Math.max(cell1.q, cell2.q);
+                    for (let q = minQ; q <= maxQ; q++) {
+                        const s = -q - cell1.r;
+                        const cell = this.grid.getCell(q, cell1.r, s);
+                        if (cell) line.push(cell);
+                    }
+                } else if (ds === 0) {
+                    // s軸方向の直線
+                    const minQ = Math.min(cell1.q, cell2.q);
+                    const maxQ = Math.max(cell1.q, cell2.q);
+                    for (let q = minQ; q <= maxQ; q++) {
+                        const r = -q - cell1.s;
+                        const cell = this.grid.getCell(q, r, cell1.s);
+                        if (cell) line.push(cell);
+                    }
+                }
+
+                return line;
+            }
+
+            placeTerritories(territories) {
+                territories.forEach(cell => {
+                    if (cell.territoryCount === 2) {
+                        // 守備陣地は奪えない
+                        return;
+                    }
+
+                    if (cell.territory !== this.currentPlayer) {
+                        if (this.tokensRemaining[this.currentPlayer] > 0) {
+                            cell.territory = this.currentPlayer;
+                            cell.territoryCount = 1;
+                            this.tokensRemaining[this.currentPlayer]--;
+                        }
+                    }
+                });
+            }
+
+            checkAndPlaceTriangleTerritories() {
+                const wizards = [];
+                this.grid.cells.forEach(cell => {
+                    if (cell.wizard === this.currentPlayer) {
+                        wizards.push(cell);
+                    }
+                });
+
+                if (wizards.length !== 3) return;
+
+                // 3つの魔法使いが正三角形（各辺2マス）を形成しているか確認
+                const distances = [];
+                for (let i = 0; i < 3; i++) {
+                    for (let j = i + 1; j < 3; j++) {
+                        const dist = this.hexDistance(wizards[i], wizards[j]);
+                        distances.push(dist);
+                    }
+                }
+
+                // 各辺が2マスであることを確認
+                if (distances.every(d => d === 2)) {
+                    // 中央のマスを計算
+                    const centerQ = Math.round((wizards[0].q + wizards[1].q + wizards[2].q) / 3);
+                    const centerR = Math.round((wizards[0].r + wizards[1].r + wizards[2].r) / 3);
+                    const centerS = Math.round((wizards[0].s + wizards[1].s + wizards[2].s) / 3);
+
+                    const centerCell = this.grid.getCell(centerQ, centerR, centerS);
+                    if (centerCell && this.tokensRemaining[this.currentPlayer] >= 2) {
+                        centerCell.territory = this.currentPlayer;
+                        centerCell.territoryCount = 2;
+                        this.tokensRemaining[this.currentPlayer] -= 2;
+                    }
+                }
+            }
+
+            hexDistance(cell1, cell2) {
+                return (Math.abs(cell1.q - cell2.q) +
+                        Math.abs(cell1.r - cell2.r) +
+                        Math.abs(cell1.s - cell2.s)) / 2;
+            }
+
+            hasValidMoves() {
+                const wizards = [];
+                this.grid.cells.forEach(cell => {
+                    if (cell.wizard === this.currentPlayer) {
+                        wizards.push(cell);
+                    }
+                });
+
+                // 各魔法使いについて、有効な移動先があるか確認
+                for (const wizard of wizards) {
+                    const originalWizard = wizard.wizard;
+                    wizard.wizard = null;
+
+                    this.grid.cells.forEach(targetCell => {
+                        if (targetCell.wizard) return;
+                        if (targetCell.territory === (3 - this.currentPlayer)) return;
+
+                        targetCell.wizard = this.currentPlayer;
+                        const newTerritories = this.calculateNewTerritories();
+                        if (newTerritories.length > 0) {
+                            wizard.wizard = originalWizard;
+                            targetCell.wizard = null;
+                            return true;
+                        }
+                        targetCell.wizard = null;
+                    });
+
+                    wizard.wizard = originalWizard;
+                }
+
+                return false;
+            }
+
+            checkWin() {
+                // トークンを全て配置した
+                if (this.tokensRemaining[this.currentPlayer] === 0) {
+                    this.gameOver = true;
+                    this.updateMessage(`プレイヤー${this.currentPlayer}の勝利！ 20個の陣地を配置しました`, true);
+                    return true;
+                }
+                return false;
+            }
+
+            endGame() {
+                this.gameOver = true;
+                const count1 = this.countTerritories(1);
+                const count2 = this.countTerritories(2);
+
+                let message;
+                if (count1 > count2) {
+                    message = `プレイヤー1の勝利！ (${count1} vs ${count2})`;
+                } else if (count2 > count1) {
+                    message = `プレイヤー2の勝利！ (${count2} vs ${count1})`;
+                } else {
+                    message = `引き分け！ (${count1} vs ${count2})`;
+                }
+
+                this.updateMessage(message, true);
+            }
+
+            countTerritories(player) {
+                let count = 0;
+                this.grid.cells.forEach(cell => {
+                    if (cell.territory === player) {
+                        count += cell.territoryCount;
+                    }
+                });
+                return count;
+            }
+
+            render() {
+                const svg = document.getElementById('board');
+
+                // 既存の魔法使いとマーカーを削除
+                svg.querySelectorAll('.wizard, .territory-marker').forEach(el => el.remove());
+
+                this.grid.cells.forEach((cell, key) => {
+                    // 六角形の色を更新
+                    let className = 'hex';
+
+                    if (cell.territory) {
+                        if (cell.territoryCount === 2) {
+                            className += ` territory-double-${cell.territory}`;
+                        } else {
+                            className += ` territory-${cell.territory}`;
+                        }
+                    } else {
+                        className += ' empty';
+                    }
+
+                    if (key === this.selectedWizard) {
+                        className += ' selected';
+                    } else if (!this.selectedWizard && cell.wizard === this.currentPlayer) {
+                        className += ' selectable';
+                    }
+
+                    cell.element.setAttribute('class', className);
+
+                    // 魔法使いを描画
+                    if (cell.wizard) {
+                        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        circle.setAttribute('cx', cell.pixelX);
+                        circle.setAttribute('cy', cell.pixelY);
+                        circle.setAttribute('r', 15);
+                        circle.setAttribute('class', `wizard wizard-${cell.wizard}`);
+                        circle.setAttribute('stroke', '#333');
+                        circle.setAttribute('stroke-width', 2);
+                        circle.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.onHexClick(key);
+                        });
+                        svg.appendChild(circle);
+
+                        // 魔法使いアイコン（帽子のマーク）
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cell.pixelX);
+                        text.setAttribute('y', cell.pixelY + 5);
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('fill', 'white');
+                        text.setAttribute('font-size', '16');
+                        text.setAttribute('font-weight', 'bold');
+                        text.setAttribute('pointer-events', 'none');
+                        text.textContent = '🧙';
+                        svg.appendChild(text);
+                    }
+
+                    // 守備陣地のマーカー
+                    if (cell.territory && cell.territoryCount === 2) {
+                        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        marker.setAttribute('x', cell.pixelX);
+                        marker.setAttribute('y', cell.pixelY + 5);
+                        marker.setAttribute('text-anchor', 'middle');
+                        marker.setAttribute('fill', 'white');
+                        marker.setAttribute('font-size', '20');
+                        marker.setAttribute('font-weight', 'bold');
+                        marker.setAttribute('class', 'territory-marker');
+                        marker.setAttribute('pointer-events', 'none');
+                        marker.textContent = '⭐';
+                        svg.appendChild(marker);
+                    }
+                });
+            }
+
+            updateInfo() {
+                document.getElementById('p1-tokens').textContent = this.tokensRemaining[1];
+                document.getElementById('p2-tokens').textContent = this.tokensRemaining[2];
+                document.getElementById('p1-board').textContent = this.countTerritories(1);
+                document.getElementById('p2-board').textContent = this.countTerritories(2);
+
+                const p1Info = document.getElementById('player1-info');
+                const p2Info = document.getElementById('player2-info');
+
+                if (this.currentPlayer === 1) {
+                    p1Info.classList.add('active');
+                    p2Info.classList.remove('active');
+                } else {
+                    p1Info.classList.remove('active');
+                    p2Info.classList.add('active');
+                }
+
+                if (!this.gameOver) {
+                    this.updateMessage(`プレイヤー${this.currentPlayer}のターン - 魔法使いを選択してください`);
+                }
+            }
+
+            updateMessage(text, isWinner = false) {
+                const messageEl = document.getElementById('message');
+                messageEl.textContent = text;
+                messageEl.className = 'message' + (isWinner ? ' winner' : '');
+            }
+        }
+
+        // ゲーム開始
+        const game = new WizardTerritoryGame();
+    </script>
+</body>
+</html>
